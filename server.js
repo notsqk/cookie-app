@@ -1,5 +1,5 @@
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
+const Database = require('better-sqlite3');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 
@@ -9,7 +9,7 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static('public'));
 
-const db = new sqlite3.Database('recookie.db');
+const db = new Database('recookie.db');
 
 // Crear tablas
 db.serialize(() => {
