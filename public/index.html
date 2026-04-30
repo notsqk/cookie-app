@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>ReCookie App</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body {
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  background: linear-gradient(135deg, #f8b500, #fceabb);
+  margin: 0;
+  padding: 20px;
+}
+
+.container {
+  max-width: 700px;
+  margin: auto;
+  background: white;
+  padding: 20px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+h2 {
+  text-align: center;
+  color: #333;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  margin: 5px 0 15px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+}
+
+button {
+  background: #ff7b00;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-right: 5px;
+}
+
+button:hover {
+  background: #e66a00;
+}
+
+#historial li {
+  background: #f1f1f1;
+  margin: 5px 0;
+  padding: 8px;
+  border-radius: 8px;
+}
+</style>
+
+</head>
+<body>
+
+<div class="container">
+
+<h2>🍪 ReCookie App</h2>
+
+<h3>Login</h3>
+<input id="user" placeholder="Usuario">
+<input id="pass" placeholder="Contraseña" type="password">
+<button onclick="login()">Entrar</button>
+
+<div id="app" style="display:none">
+
+<h3>Producción</h3>
+<input id="unidades" placeholder="Unidades producidas">
+<input id="total" placeholder="Total de costos">
+
+<button onclick="guardar()">Guardar</button>
+<button onclick="cargarHistorial()">Ver historial</button>
+
+<h3>Gráfico de ganancias</h3>
+<canvas id="grafico"></canvas>
+
+<h3>Historial</h3>
+<ul id="historial"></ul>
+
+</div>
+
+</div>
+
+<script>
+let user_id = null;
+let chart = null;
+
+async function login() {
+  let res = await fetch('/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      username: user.value,
+      password: pass.value
+    })
+  });
+
+  let data = await res.json();
+  user_id = data.id;
+
+  document.getElementById('app').style.display = 'block';
+}
+
+async function guardar() {
+  let total = parseFloat(document.getElementById('total').value);
+  let unidades = parseInt(document.getElementById('unidades').value);
+  let ganancia = 1800 * unidades - total;
+
+  await fetch('/guardar', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ user_id, total, unidades, ganancia })
+  });
+
+  alert('Guardado');
+}
+
+async function cargarHistorial() {
+  let res = await fetch('/historial/' + user_id);
+  let data = await res.json();
+
+  let ul = document.getElementById('historial');
+  ul.innerHTML = '';
+
+  let labels = [];
+  let ganancias = [];
+
+  data.forEach(r => {
+    let li = document.createElement('li');
+    li.textContent = new Date(r.fecha).toLocaleString() + ' - $' + r.ganancia.toFixed(2);
+    ul.appendChild(li);
+
+    labels.push(new Date(r.fecha).toLocaleDateString());
+    ganancias.push(r.ganancia);
+  });
+
+  if (chart) chart.destroy();
+
+  chart = new Chart(document.getElementById('grafico'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Ganancia',
+        data: ganancias,
+        borderWidth: 2
+      }]
+    }
+  });
+}
+</script>
+
+</body>
+</html>
